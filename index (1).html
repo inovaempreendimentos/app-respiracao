@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Respira" />
+<meta name="theme-color" content="#070d08" />
+<title>Respira</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400&family=Space+Grotesk:wght@300;400;500&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #070d08;
+    --bg2: #0b160c;
+    --ink: #e8f2e6;
+    --mint: #9fe0b0;
+    --sage: #6fb886;
+    --moss: #2a4a30;
+    --dim: #4a6a52;
+    --amber: #e0b062;
+    --line: #17281a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+  html, body { height: 100%; background: var(--bg); overscroll-behavior: none; }
+  body {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    color: var(--ink);
+    max-width: 480px; margin: 0 auto;
+    position: relative; overflow: hidden;
+    height: 100dvh;
+  }
+
+  /* ─────────── MENU (protocol list) ─────────── */
+  #menu {
+    height: 100dvh; overflow-y: auto;
+    padding: max(34px, env(safe-area-inset-top)) 26px 40px;
+    display: flex; flex-direction: column;
+  }
+  .brand {
+    font-family: 'Fraunces', serif; font-weight: 300;
+    font-size: 15px; letter-spacing: 6px; text-transform: uppercase;
+    color: var(--sage); margin-bottom: 6px;
+  }
+  .hero {
+    font-family: 'Fraunces', serif; font-weight: 300;
+    font-size: 40px; line-height: 1.05; letter-spacing: -0.5px;
+    color: var(--ink); margin-bottom: 8px;
+  }
+  .hero em { font-style: italic; color: var(--mint); }
+  .subhero { font-size: 14px; line-height: 1.6; color: var(--dim); max-width: 300px; margin-bottom: 30px; }
+
+  .cardlist { display: flex; flex-direction: column; gap: 12px; }
+  .card {
+    position: relative;
+    background: linear-gradient(160deg, #0c170d, #0a130b);
+    border: 1px solid var(--line);
+    border-radius: 20px; padding: 20px 20px 18px;
+    cursor: pointer; overflow: hidden;
+    transition: border-color 0.25s, transform 0.15s;
+  }
+  .card:active { transform: scale(0.985); }
+  .card .glow {
+    position: absolute; top: -40px; right: -30px;
+    width: 120px; height: 120px; border-radius: 50%;
+    background: radial-gradient(circle, var(--gcol, #2c5a3a), transparent 70%);
+    opacity: 0.5; pointer-events: none;
+  }
+  .card h3 { font-family: 'Fraunces', serif; font-weight: 400; font-size: 21px; color: var(--ink); margin-bottom: 4px; position: relative; }
+  .card .tag { font-size: 12.5px; color: var(--sage); margin-bottom: 12px; position: relative; }
+  .card .desc { font-size: 13px; line-height: 1.55; color: var(--dim); margin-bottom: 14px; position: relative; }
+  .card .meta { display: flex; gap: 16px; position: relative; }
+  .card .meta span {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--sage); letter-spacing: 0.5px;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .card .rhythm {
+    position: absolute; bottom: 18px; right: 20px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    color: var(--moss); letter-spacing: 1px;
+  }
+  .foot { margin-top: 26px; font-size: 11px; line-height: 1.6; color: #33502f; text-align: center; }
+
+  /* ─────────── SESSION (breathing screen) ─────────── */
+  #session {
+    position: fixed; inset: 0; max-width: 480px; margin: 0 auto;
+    background: var(--bg);
+    display: none; flex-direction: column;
+    padding: max(20px, env(safe-area-inset-top)) 24px max(28px, env(safe-area-inset-bottom));
+    z-index: 20;
+  }
+  #session.on { display: flex; }
+
+  .s-top { display: flex; justify-content: space-between; align-items: center; z-index: 5; }
+  .s-close {
+    width: 42px; height: 42px; border-radius: 50%;
+    border: 1px solid var(--line); background: rgba(10,20,12,0.6);
+    color: var(--sage); font-size: 20px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .s-name { font-family: 'Fraunces', serif; font-size: 16px; color: var(--ink); }
+  .s-cycle { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--dim); min-width: 42px; text-align: right; }
+
+  .stage {
+    flex: 1; position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+  /* ambient breathing light behind orb */
+  .halo {
+    position: absolute; width: 340px; height: 340px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(111,184,134,0.18), transparent 65%);
+    transform: scale(0.6); opacity: 0.4;
+    transition: transform var(--dur, 4s) cubic-bezier(.4,0,.4,1), opacity var(--dur, 4s) ease;
+  }
+  .orb-wrap { position: relative; width: 260px; height: 260px; display: flex; align-items: center; justify-content: center; }
+  .orb {
+    position: absolute; width: 200px; height: 200px; border-radius: 50%;
+    background: radial-gradient(circle at 38% 32%, #bff0cd, #6fb886 42%, #2f6b45 78%, #1c4630);
+    box-shadow: 0 0 60px rgba(111,184,134,0.4), inset 0 0 40px rgba(255,255,255,0.12);
+    transform: scale(0.62);
+    transition: transform var(--dur, 4s) cubic-bezier(.42,0,.42,1),
+                box-shadow var(--dur, 4s) ease,
+                background var(--dur, 4s) ease;
+  }
+  .orb.amber {
+    background: radial-gradient(circle at 38% 32%, #f4dca8, #e0b062 44%, #9a6f2c 80%);
+    box-shadow: 0 0 70px rgba(224,176,98,0.45), inset 0 0 40px rgba(255,255,255,0.14);
+  }
+  .ring {
+    position: absolute; width: 236px; height: 236px; border-radius: 50%;
+    border: 1px solid rgba(111,184,134,0.22);
+  }
+  .ring2 { width: 200px; height: 200px; border-color: rgba(111,184,134,0.12); }
+
+  .phase {
+    position: absolute; text-align: center; z-index: 4;
+    pointer-events: none;
+  }
+  .phase .word {
+    font-family: 'Fraunces', serif; font-weight: 300;
+    font-size: 26px; color: #08120a; letter-spacing: 0.5px;
+  }
+  .phase .count {
+    font-family: 'JetBrains Mono', monospace; font-weight: 300;
+    font-size: 15px; color: rgba(8,18,10,0.6); margin-top: 2px;
+  }
+
+  .s-bottom { text-align: center; z-index: 5; }
+  .s-hint { font-size: 13.5px; color: var(--dim); margin-bottom: 20px; min-height: 20px; }
+  .s-controls { display: flex; gap: 12px; justify-content: center; }
+  .btn {
+    font-family: 'Space Grotesk', sans-serif; font-weight: 500;
+    border-radius: 14px; padding: 15px 0; font-size: 15px; cursor: pointer;
+    border: 1px solid var(--line); background: #0e1c10; color: var(--ink);
+    flex: 1; max-width: 200px;
+  }
+  .btn.primary { background: linear-gradient(135deg, #2f6b45, #6fb886); color: #08120a; border: none; font-weight: 500; }
+  .btn:active { transform: scale(0.97); }
+
+  /* prep countdown */
+  .prep { position: absolute; z-index: 6; text-align: center; }
+  .prep .big { font-family: 'Fraunces', serif; font-size: 90px; font-weight: 300; color: var(--mint); line-height: 1; }
+  .prep .lbl { font-size: 14px; color: var(--dim); margin-top: 8px; letter-spacing: 1px; }
+
+  /* intro guide */
+  .guide {
+    position: absolute; z-index: 7; inset: 0;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 0 30px; background: var(--bg);
+  }
+  .g-title {
+    font-family: 'Fraunces', serif; font-weight: 300; font-size: 26px;
+    color: var(--ink); margin-bottom: 22px; text-align: center;
+  }
+  .g-steps { display: flex; flex-direction: column; gap: 14px; margin-bottom: 28px; }
+  .g-step { display: flex; gap: 14px; align-items: flex-start; }
+  .g-step .gn {
+    width: 30px; height: 30px; flex-shrink: 0; border-radius: 50%;
+    background: linear-gradient(135deg, #2f6b45, #6fb886); color: #08120a;
+    font-family: 'JetBrains Mono', monospace; font-weight: 400; font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .g-step .gt { font-size: 14.5px; line-height: 1.55; color: var(--ink); padding-top: 3px; }
+  .g-step .gt b { color: var(--mint); font-weight: 500; }
+  .g-step .gt span { color: var(--dim); font-size: 13px; }
+
+  /* done state */
+  .done { position: absolute; z-index: 6; text-align: center; padding: 0 30px; }
+  .done .mark { font-size: 40px; margin-bottom: 14px; }
+  .done h2 { font-family: 'Fraunces', serif; font-weight: 300; font-size: 30px; color: var(--ink); margin-bottom: 10px; }
+  .done p { font-size: 14px; color: var(--dim); line-height: 1.6; margin-bottom: 26px; }
+
+  .hidden { display: none !important; }
+
+  /* ─────────── SIGNUP GATE ─────────── */
+  #gate {
+    position: fixed; inset: 0; max-width: 480px; margin: 0 auto;
+    background: var(--bg); z-index: 40;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 40px 30px max(40px, env(safe-area-inset-bottom));
+  }
+  #gate .g-brand {
+    font-family: 'Fraunces', serif; font-weight: 300;
+    font-size: 15px; letter-spacing: 6px; text-transform: uppercase;
+    color: var(--sage); margin-bottom: 18px; text-align: center;
+  }
+  #gate .g-orb {
+    width: 90px; height: 90px; border-radius: 50%; margin: 0 auto 26px;
+    background: radial-gradient(circle at 38% 32%, #bff0cd, #6fb886 42%, #2f6b45 78%, #1c4630);
+    box-shadow: 0 0 50px rgba(111,184,134,0.4), inset 0 0 30px rgba(255,255,255,0.12);
+    animation: gbreath 6s ease-in-out infinite;
+  }
+  @keyframes gbreath { 0%,100% { transform: scale(0.82); } 50% { transform: scale(1); } }
+  #gate h1 {
+    font-family: 'Fraunces', serif; font-weight: 300; font-size: 30px;
+    line-height: 1.15; color: var(--ink); text-align: center; margin-bottom: 12px;
+  }
+  #gate h1 em { font-style: italic; color: var(--mint); }
+  #gate .g-sub { font-size: 14.5px; line-height: 1.6; color: var(--dim); text-align: center; margin-bottom: 30px; }
+  #gate .field { margin-bottom: 14px; }
+  #gate label {
+    display: block; font-size: 12px; letter-spacing: 0.5px;
+    color: var(--sage); margin-bottom: 7px; padding-left: 4px;
+  }
+  #gate input {
+    width: 100%; background: #0c170d; border: 1px solid var(--line);
+    border-radius: 14px; padding: 15px 16px; font-size: 16px; color: var(--ink);
+    font-family: 'Space Grotesk', sans-serif; outline: none;
+    transition: border-color 0.2s;
+  }
+  #gate input:focus { border-color: var(--sage); }
+  #gate input::placeholder { color: #3a5540; }
+  #gate .g-btn {
+    width: 100%; margin-top: 8px; border: none; border-radius: 14px;
+    padding: 17px 0; font-size: 16px; font-weight: 500; cursor: pointer;
+    font-family: 'Space Grotesk', sans-serif;
+    background: linear-gradient(135deg, #2f6b45, #6fb886); color: #08120a;
+  }
+  #gate .g-btn:disabled { opacity: 0.55; }
+  #gate .g-btn:active { transform: scale(0.98); }
+  #gate .g-err { font-size: 13px; color: #e08a8a; text-align: center; margin-top: 12px; min-height: 16px; }
+  #gate .g-fine { font-size: 11px; line-height: 1.6; color: #33502f; text-align: center; margin-top: 20px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .orb, .halo { transition: none; }
+    #gate .g-orb { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════ SIGNUP GATE ══════════ -->
+<div id="gate">
+  <div class="g-brand">Respira</div>
+  <div class="g-orb"></div>
+  <h1>Antes de começar,<br><em>como te chamo?</em></h1>
+  <div class="g-sub">Crie seu acesso para desbloquear os protocolos de respiração.</div>
+
+  <div class="field">
+    <label for="gName">Seu nome</label>
+    <input id="gName" type="text" placeholder="Como você quer ser chamado" autocomplete="given-name" />
+  </div>
+  <div class="field">
+    <label for="gEmail">Seu melhor e-mail</label>
+    <input id="gEmail" type="email" placeholder="voce@email.com" autocomplete="email" inputmode="email" />
+  </div>
+  <div class="field">
+    <label for="gPhone">Seu WhatsApp (com DDD)</label>
+    <input id="gPhone" type="tel" placeholder="(11) 99999-9999" autocomplete="tel" inputmode="tel" />
+  </div>
+  <button class="g-btn" id="gBtn">Desbloquear respirações</button>
+  <div class="g-err" id="gErr"></div>
+  <div class="g-fine">Seus dados ficam seguros e são usados apenas para enviar conteúdos sobre respiração e presença. Sem spam.</div>
+</div>
+
+<!-- ══════════ MENU ══════════ -->
+<div id="menu">
+  <div class="brand">Respira</div>
+  <div class="hero">Sua respiração,<br><em>guiada.</em></div>
+  <div class="subhero">Escolha um protocolo. Siga o círculo. Deixe o corpo lembrar como se acalmar.</div>
+
+  <div class="cardlist" id="cardlist"></div>
+
+  <div class="foot">
+    Não pratique retenções na água ou dirigindo.<br>
+    Gestantes e pessoas com condição cardíaca: consulte um profissional.
+  </div>
+</div>
+
+<!-- ══════════ SESSION ══════════ -->
+<div id="session">
+  <div class="s-top">
+    <button class="s-close" id="closeBtn">✕</button>
+    <div class="s-name" id="sName">—</div>
+    <div class="s-cycle" id="sCycle"></div>
+  </div>
+
+  <div class="stage">
+    <div class="halo" id="halo"></div>
+    <div class="orb-wrap">
+      <div class="ring"></div>
+      <div class="ring ring2"></div>
+      <div class="orb" id="orb"></div>
+      <div class="phase" id="phaseBox">
+        <div class="word" id="phaseWord">Prepare-se</div>
+        <div class="count" id="phaseCount"></div>
+      </div>
+    </div>
+
+    <div class="prep hidden" id="prep">
+      <div class="big" id="prepNum">3</div>
+      <div class="lbl">respire fundo e relaxe</div>
+    </div>
+
+    <div class="guide hidden" id="guide">
+      <div class="g-title">Como funciona</div>
+      <div class="g-steps" id="gSteps"></div>
+      <button class="btn primary" id="guideStart" style="max-width:none;margin-top:6px;">Entendi, começar</button>
+    </div>
+
+    <div class="done hidden" id="done">
+      <div class="mark">🌿</div>
+      <h2 id="doneTitle">Sessão completa</h2>
+      <p id="doneMsg"></p>
+    </div>
+  </div>
+
+  <div class="s-bottom">
+    <div class="s-hint" id="sHint"></div>
+    <div class="s-controls" id="sControls">
+      <button class="btn" id="pauseBtn">Pausar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────── SIGNUP GATE ───────────
+// PASSO IMPORTANTE: cole aqui a URL do seu Google Apps Script (veja o guia).
+const CADASTRO_URL = "https://script.google.com/macros/s/AKfycbzuVu_VtD-TkZdjshdBMngp97hCey5Gl6i0vr06BvUpwe8-py4ngMWC8kMSfOiHjj0S/exec";
+const GATE_KEY = "respira_user";
+
+const gate = document.getElementById("gate");
+const gName = document.getElementById("gName");
+const gEmail = document.getElementById("gEmail");
+const gPhone = document.getElementById("gPhone");
+const gBtn = document.getElementById("gBtn");
+const gErr = document.getElementById("gErr");
+
+function alreadyRegistered() {
+  try { return !!localStorage.getItem(GATE_KEY); } catch (e) { return false; }
+}
+
+function openApp() {
+  gate.classList.add("hidden");
+}
+
+// If returning user, skip the gate
+if (alreadyRegistered()) openApp();
+
+gBtn.onclick = async () => {
+  const nome = gName.value.trim();
+  const email = gEmail.value.trim();
+  const whatsapp = gPhone.value.trim();
+  gErr.textContent = "";
+
+  if (nome.length < 2) { gErr.textContent = "Digite seu nome."; return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { gErr.textContent = "Digite um e-mail válido."; return; }
+  const digits = whatsapp.replace(/\D/g, "");
+  if (digits.length < 10) { gErr.textContent = "Digite um WhatsApp válido com DDD."; return; }
+
+  gBtn.disabled = true;
+  gBtn.textContent = "Criando seu acesso...";
+
+  const registro = { nome, email, whatsapp, data: new Date().toISOString(), origem: "app_respira" };
+
+  // Save locally so the user isn't asked again
+  try { localStorage.setItem(GATE_KEY, JSON.stringify(registro)); } catch (e) {}
+
+  // Send to Google Sheets (via Apps Script). Fire-and-forget: never block entry.
+  try {
+    if (CADASTRO_URL && !CADASTRO_URL.startsWith("COLE_AQUI")) {
+      fetch(CADASTRO_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(registro),
+      }).catch(() => {});
+    }
+  } catch (e) {}
+
+  setTimeout(openApp, 500);
+};
+
+// Allow Enter key to submit
+[gName, gEmail, gPhone].forEach(inp => inp.addEventListener("keydown", e => { if (e.key === "Enter") gBtn.click(); }));
+
+// ─────────── PROTOCOLS ───────────
+// phases: {t: seconds, type: 'in'|'hold'|'out'|'holdEmpty', label}
+const PROTOCOLS = [
+  {
+    id: "dopamina",
+    name: "Pico de Dopamina",
+    tag: "Energia limpa pela manhã",
+    desc: "Hiperventilação controlada + retenção. Acorda o corpo e sustenta o foco por horas.",
+    color: "#2c5a3a",
+    rhythm: "30× · reter",
+    cycles: 3,
+    hint: "Antes do celular. Sente-se ou deite-se com segurança.",
+    special: "wimhof",
+    guide: [
+      { n: "1", t: "<b>30 respirações em onda.</b> <span>Puxa o ar fundo e solta sem forçar, seguindo o círculo. Sem pausa entre elas.</span>" },
+      { n: "2", t: "<b>Solta tudo e segura SEM ar.</b> <span>Depois da 30ª, esvazia o pulmão e fica sem respirar. Toque o círculo quando a vontade de respirar chegar.</span>" },
+      { n: "3", t: "<b>Puxa e segura COM ar por 15s.</b> <span>Enche o pulmão, segura, solta. Aí começa a próxima rodada. São 3 no total.</span>" },
+    ],
+  },
+  {
+    id: "suspiro",
+    name: "Suspiro Autônomo",
+    tag: "Alívio imediato",
+    desc: "Dupla inspiração e expiração longa. O reset mais rápido para pânico e ansiedade.",
+    color: "#3a5a8a",
+    rhythm: "2 in · sopra",
+    cycles: 5,
+    hint: "Use no pico da agitação. Alívio em segundos.",
+    phases: [
+      { t: 2.5, type: "in", label: "Inspire" },
+      { t: 1, type: "in", label: "Mais um pouco" },
+      { t: 6, type: "out", label: "Solte devagar" },
+    ],
+  },
+  {
+    id: "co2",
+    name: "Respiração Quadrada",
+    tag: "Foco sob pressão",
+    desc: "Quatro tempos iguais. Ensina a mente que você está seguro mesmo tenso.",
+    color: "#4a6a3a",
+    rhythm: "4·4·4·4",
+    cycles: 6,
+    hint: "Antes de reuniões e decisões importantes.",
+    phases: [
+      { t: 4, type: "in", label: "Inspire" },
+      { t: 4, type: "hold", label: "Segure" },
+      { t: 4, type: "out", label: "Expire" },
+      { t: 4, type: "holdEmpty", label: "Vazio" },
+    ],
+  },
+  {
+    id: "478",
+    name: "4 · 7 · 8",
+    tag: "Para dormir",
+    desc: "Inspire em 4, segure em 7, expire em 8. O sedativo natural do sistema nervoso.",
+    color: "#5a4a7a",
+    rhythm: "4·7·8",
+    cycles: 4,
+    hint: "Na cama, luzes apagadas. Deixe o corpo pesar.",
+    phases: [
+      { t: 4, type: "in", label: "Inspire" },
+      { t: 7, type: "hold", label: "Segure" },
+      { t: 8, type: "out", label: "Expire" },
+    ],
+  },
+  {
+    id: "coerencia",
+    name: "Coerência Cardíaca",
+    tag: "Equilíbrio",
+    desc: "Cinco segundos para dentro, cinco para fora. Sincroniza coração e respiração.",
+    color: "#2c6a5a",
+    rhythm: "5·5",
+    cycles: 10,
+    hint: "Cinco minutos. O ponto de equilíbrio do dia.",
+    phases: [
+      { t: 5, type: "in", label: "Inspire" },
+      { t: 5, type: "out", label: "Expire" },
+    ],
+  },
+];
+
+// ─────────── RENDER MENU ───────────
+const cardlist = document.getElementById("cardlist");
+PROTOCOLS.forEach((p) => {
+  const totalMin = estimateMinutes(p);
+  const el = document.createElement("div");
+  el.className = "card";
+  el.style.setProperty("--gcol", p.color);
+  el.innerHTML = `
+    <div class="glow"></div>
+    <h3>${p.name}</h3>
+    <div class="tag">${p.tag}</div>
+    <div class="desc">${p.desc}</div>
+    <div class="meta">
+      <span>◷ ${totalMin}</span>
+      <span>↻ ${p.cycles}×</span>
+    </div>
+    <div class="rhythm">${p.rhythm}</div>
+  `;
+  el.onclick = () => startSession(p);
+  cardlist.appendChild(el);
+});
+
+function estimateMinutes(p) {
+  if (p.special === "wimhof") return "~5 min";
+  const cycleT = p.phases.reduce((a, b) => a + b.t, 0);
+  const total = Math.round((cycleT * p.cycles) / 60 * 10) / 10;
+  return total < 1 ? Math.round(cycleT * p.cycles) + "s" : total + " min";
+}
+
+// ─────────── SESSION ENGINE ───────────
+const session = document.getElementById("session");
+const orb = document.getElementById("orb");
+const halo = document.getElementById("halo");
+const phaseWord = document.getElementById("phaseWord");
+const phaseCount = document.getElementById("phaseCount");
+const phaseBox = document.getElementById("phaseBox");
+const sName = document.getElementById("sName");
+const sCycle = document.getElementById("sCycle");
+const sHint = document.getElementById("sHint");
+const prep = document.getElementById("prep");
+const prepNum = document.getElementById("prepNum");
+const doneEl = document.getElementById("done");
+const doneMsg = document.getElementById("doneMsg");
+const sControls = document.getElementById("sControls");
+const pauseBtn = document.getElementById("pauseBtn");
+
+let state = { running: false, paused: false, timer: null, current: null };
+
+function vibrate(ms) { if (navigator.vibrate) navigator.vibrate(ms); }
+
+// Web Audio soft cue
+let audioCtx = null;
+function tone(freq, dur) {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.frequency.value = freq; o.type = "sine";
+    g.gain.setValueAtTime(0, audioCtx.currentTime);
+    g.gain.linearRampToValueAtTime(0.06, audioCtx.currentTime + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime + dur);
+  } catch (e) {}
+}
+
+function startSession(p) {
+  state.current = p;
+  state.running = true;
+  state.paused = false;
+  sName.textContent = p.name;
+  sHint.textContent = p.hint;
+  session.classList.add("on");
+  doneEl.classList.add("hidden");
+  phaseBox.classList.remove("hidden");
+  sControls.classList.remove("hidden");
+  pauseBtn.textContent = "Pausar";
+  // wake audio on user gesture
+  try { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
+
+  const begin = () => runPrep(() => {
+    if (p.special === "wimhof") runWimHof();
+    else runStandard(p);
+  });
+
+  if (p.guide) {
+    showGuide(p, begin);
+  } else {
+    begin();
+  }
+}
+
+function showGuide(p, done) {
+  const guide = document.getElementById("guide");
+  const gSteps = document.getElementById("gSteps");
+  phaseBox.classList.add("hidden");
+  gSteps.innerHTML = p.guide.map(s =>
+    `<div class="g-step"><div class="gn">${s.n}</div><div class="gt">${s.t}</div></div>`
+  ).join("");
+  guide.classList.remove("hidden");
+  document.getElementById("guideStart").onclick = () => {
+    guide.classList.add("hidden");
+    phaseBox.classList.remove("hidden");
+    done();
+  };
+}
+
+function runPrep(done) {
+  prep.classList.remove("hidden");
+  phaseBox.classList.add("hidden");
+  let n = 3;
+  prepNum.textContent = n;
+  setOrb(0.62, 4);
+  const iv = setInterval(() => {
+    n--;
+    if (n <= 0) { clearInterval(iv); prep.classList.add("hidden"); phaseBox.classList.remove("hidden"); done(); }
+    else { prepNum.textContent = n; tone(330, 0.15); }
+  }, 1000);
+  state.timer = iv;
+}
+
+// orb scale + phase color; dur in seconds
+function setOrb(scale, dur, amber) {
+  orb.style.setProperty("--dur", dur + "s");
+  halo.style.setProperty("--dur", dur + "s");
+  orb.style.transform = `scale(${scale})`;
+  halo.style.transform = `scale(${scale * 1.5})`;
+  halo.style.opacity = (0.25 + scale * 0.4).toFixed(2);
+  orb.classList.toggle("amber", !!amber);
+}
+
+// ── Standard protocols (phase list) ──
+function runStandard(p) {
+  let cycle = 0, phaseIdx = 0;
+  sCycle.textContent = `1/${p.cycles}`;
+
+  function nextPhase() {
+    if (state.paused) { state._resume = nextPhase; return; }
+    if (phaseIdx >= p.phases.length) {
+      phaseIdx = 0; cycle++;
+      if (cycle >= p.cycles) { finish(p); return; }
+      sCycle.textContent = `${cycle + 1}/${p.cycles}`;
+    }
+    const ph = p.phases[phaseIdx];
+    animatePhase(ph);
+    phaseIdx++;
+    state.timer = setTimeout(nextPhase, ph.t * 1000);
+  }
+  nextPhase();
+}
+
+function animatePhase(ph) {
+  phaseWord.textContent = ph.label;
+  const isHold = ph.type === "hold" || ph.type === "holdEmpty";
+  // orb target scale by type
+  let scale = 0.62;
+  if (ph.type === "in") scale = 1.0;
+  else if (ph.type === "hold") scale = 1.0;
+  else if (ph.type === "out") scale = 0.62;
+  else if (ph.type === "holdEmpty") scale = 0.62;
+  setOrb(scale, ph.t, isHold);
+  // cues
+  if (ph.type === "in") { tone(392, 0.2); vibrate(30); }
+  else if (ph.type === "out") { tone(294, 0.2); vibrate(20); }
+  else { tone(349, 0.12); vibrate([10, 40, 10]); }
+  // live countdown
+  let remain = Math.ceil(ph.t);
+  phaseCount.textContent = remain;
+  clearInterval(state.countIv);
+  state.countIv = setInterval(() => {
+    if (state.paused) return;
+    remain--;
+    phaseCount.textContent = remain > 0 ? remain : "";
+    if (remain <= 0) clearInterval(state.countIv);
+  }, 1000);
+}
+
+// ── Wim Hof / Dopamina special ──
+function runWimHof() {
+  const p = state.current;
+  let round = 0;
+  const breaths = 30;
+
+  function doRound() {
+    if (state.paused) { state._resume = doRound; return; }
+    if (round >= p.cycles) { finish(p); return; }
+    sCycle.textContent = `${round + 1}/${p.cycles}`;
+    let b = 0;
+    sHint.textContent = "Siga o círculo: cresce = puxa, encolhe = solta";
+    // one full breath = puxa (inflate) then solta (deflate)
+    function breath() {
+      if (state.paused) { state._resume = breath; return; }
+      if (b >= breaths) { holdEmpty(); return; }
+      b++;
+      // ── PUXA (inhale) ──
+      phaseWord.textContent = "Puxa o ar";
+      phaseCount.textContent = `${b} de 30`;
+      setOrb(1.0, 1.1);
+      tone(392, 0.14); vibrate(15);
+      state.timer = setTimeout(() => {
+        if (state.paused) { state._resume = solta; return; }
+        solta();
+      }, 1100);
+      // ── SOLTA (exhale) ──
+      function solta() {
+        phaseWord.textContent = "Solta";
+        setOrb(0.6, 1.0);
+        tone(294, 0.12); vibrate(10);
+        state.timer = setTimeout(() => {
+          if (state.paused) { state._resume = breath; return; }
+          breath();
+        }, 1000);
+      }
+    }
+    // retention with empty lungs
+    function holdEmpty() {
+      phaseWord.textContent = "Segure SEM ar";
+      sHint.textContent = "Soltou tudo? Fique com o pulmão vazio. Toque o círculo quando quiser respirar.";
+      setOrb(0.5, 2, true);
+      tone(262, 0.3); vibrate([20, 60, 20]);
+      let secs = 0;
+      phaseCount.textContent = "0s";
+      clearInterval(state.countIv);
+      state.countIv = setInterval(() => {
+        if (state.paused) return;
+        secs++;
+        phaseCount.textContent = secs + "s";
+      }, 1000);
+      // auto-advance after 90s as a safety net
+      state.timer = setTimeout(() => {
+        clearInterval(state.countIv); orb.onclick = null;
+        recovery();
+      }, 90000);
+      // tap orb to end retention when the urge to breathe comes
+      orb.onclick = () => { clearTimeout(state.timer); clearInterval(state.countIv); orb.onclick = null; recovery(); };
+    }
+    function recovery() {
+      phaseWord.textContent = "Puxa e segure COM ar";
+      sHint.textContent = "Agora enche o pulmão e segura por 15 segundos";
+      setOrb(1.0, 2);
+      tone(440, 0.3); vibrate(40);
+      let r = 15;
+      phaseCount.textContent = r + "s";
+      clearInterval(state.countIv);
+      state.countIv = setInterval(() => {
+        if (state.paused) return;
+        r--;
+        phaseCount.textContent = r > 0 ? r + "s" : "";
+        if (r <= 0) { clearInterval(state.countIv); round++; sHint.textContent = ""; doRound(); }
+      }, 1000);
+    }
+    breath();
+  }
+  doRound();
+}
+
+function finish(p) {
+  state.running = false;
+  clearTimeout(state.timer); clearInterval(state.countIv);
+  phaseBox.classList.add("hidden");
+  sControls.classList.add("hidden");
+  sHint.textContent = "";
+  setOrb(0.62, 3);
+  doneEl.classList.remove("hidden");
+  doneMsg.textContent = doneMessage(p);
+  tone(523, 0.4); setTimeout(() => tone(659, 0.5), 200); vibrate([40, 80, 40]);
+}
+
+function doneMessage(p) {
+  const msgs = {
+    dopamina: "Seu corpo está desperto. Leve essa energia pro seu dia — antes do celular.",
+    suspiro: "O aperto no peito cede. Volte quando precisar, é só respirar.",
+    co2: "Sua amígdala aprendeu que você está seguro. Entre na reunião centrado.",
+    "478": "O sistema nervoso desacelerou. Deixe o sono chegar sozinho.",
+    coerencia: "Coração e respiração em sincronia. Esse é o seu ponto de equilíbrio.",
+  };
+  return msgs[p.id] || "Bem feito. Um dia de cada vez.";
+}
+
+// ─────────── CONTROLS ───────────
+document.getElementById("closeBtn").onclick = endSession;
+function endSession() {
+  state.running = false; state.paused = false;
+  clearTimeout(state.timer); clearInterval(state.countIv);
+  orb.onclick = null;
+  document.getElementById("guide").classList.add("hidden");
+  session.classList.remove("on");
+  setOrb(0.62, 0.5);
+}
+
+pauseBtn.onclick = () => {
+  if (!state.running) return;
+  state.paused = !state.paused;
+  pauseBtn.textContent = state.paused ? "Retomar" : "Pausar";
+  if (!state.paused && state._resume) { const r = state._resume; state._resume = null; r(); }
+};
+
+// prevent scroll bounce on session
+session.addEventListener("touchmove", (e) => e.preventDefault(), { passive: false });
+</script>
+</body>
+</html>
