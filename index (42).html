@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>A Arte de Respirar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0e1420; --bg-soft:#141b29; --card:#182233; --card-border:#263349;
+    --text:#f2efe8; --text-dim:#a8b3c4; --accent:#7fc4e0;
+  }
+  html{ color-scheme: dark; }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{ background-color:var(--bg); color:var(--text); font-family:'Sora',sans-serif; min-height:100vh; overflow-x:hidden; }
+  body{ display:flex; align-items:center; justify-content:center; min-height:100vh; padding:24px 16px;
+    background: radial-gradient(circle at 20% 15%, rgba(127,196,224,0.09), transparent 40%),
+                radial-gradient(circle at 80% 85%, rgba(147,197,253,0.06), transparent 40%),
+                var(--bg);
+  }
+  .app{ width:100%; max-width:580px; }
+  h1,h2,h3{ font-family:'Fraunces',serif; font-weight:500; letter-spacing:-0.01em; }
+  .screen{ display:none; animation: fadeUp .5s ease both; }
+  .screen.active{ display:block; }
+  @keyframes fadeUp{ from{opacity:0; transform:translateY(14px);} to{opacity:1; transform:translateY(0);} }
+
+  .hero{ text-align:center; }
+  .eyebrow{ font-size:12px; letter-spacing:0.18em; text-transform:uppercase; color:var(--accent); margin-bottom:16px; font-weight:700; }
+  .hero h1{ font-size:clamp(28px,6vw,36px); line-height:1.18; margin-bottom:14px; }
+  .hero p{ color:#c3cbd8; font-size:15px; line-height:1.65; max-width:440px; margin:0 auto 30px; }
+
+  .practice-list{ display:flex; flex-direction:column; gap:12px; }
+  .practice-card{ display:flex; align-items:center; gap:16px; background:var(--card); border:1px solid var(--card-border);
+    border-radius:16px; padding:18px 20px; cursor:pointer; text-align:left; transition:border-color .15s ease, transform .15s ease; }
+  .practice-card:hover{ border-color:var(--accent); transform:translateY(-2px); }
+  .practice-card.locked{ opacity:0.72; }
+  .practice-card.locked .practice-meta{ color:#e8c76f; }
+  .practice-emoji{ font-size:26px; width:48px; height:48px; border-radius:12px; background:var(--bg-soft); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .practice-info{ flex:1; }
+  .practice-name{ font-size:15.5px; font-weight:600; margin-bottom:3px; font-family:'Fraunces',serif; }
+  .practice-desc{ font-size:12.5px; color:var(--text-dim); line-height:1.45; }
+  .practice-meta{ font-size:11px; color:var(--accent); font-weight:700; text-transform:uppercase; letter-spacing:0.04em; flex-shrink:0; text-align:right; }
+
+  .back-link{ display:inline-block; margin-top:20px; font-size:12px; color:var(--text-dim); cursor:pointer; background:none; border:none; font-family:'Sora',sans-serif; }
+  .back-link:hover{ color:var(--text); }
+
+  /* ---- Sessão ---- */
+  .session-wrap{ text-align:center; }
+  .session-title{ font-size:13px; text-transform:uppercase; letter-spacing:0.12em; color:var(--accent); font-weight:700; margin-bottom:6px; }
+  .session-cycles{ font-size:12px; color:var(--text-dim); margin-bottom:36px; }
+
+  .breath-orb-wrap{ width:240px; height:240px; margin:0 auto 30px; position:relative; display:flex; align-items:center; justify-content:center; }
+  .breath-orb{ width:120px; height:120px; border-radius:50%; background:radial-gradient(circle at 35% 30%, rgba(127,196,224,0.9), rgba(79,140,180,0.5) 60%, rgba(79,140,180,0.15) 100%);
+    box-shadow:0 0 60px rgba(127,196,224,0.35); transition:transform 1s ease-in-out; }
+  .breath-ring{ position:absolute; inset:0; border-radius:50%; border:1px solid rgba(127,196,224,0.25); }
+  .breath-phase-label{ font-family:'Fraunces',serif; font-size:26px; font-weight:500; margin-bottom:8px; min-height:34px; }
+  .breath-timer{ font-size:14px; color:var(--text-dim); margin-bottom:34px; }
+
+  .session-controls{ display:flex; justify-content:center; gap:12px; flex-wrap:wrap; margin-bottom:26px; }
+
+  button.primary{ background:var(--text); color:var(--bg); border:none; font-family:'Sora',sans-serif; font-weight:700; font-size:15px;
+    padding:14px 30px; border-radius:100px; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease; }
+  button.primary:hover{ transform:translateY(-2px); box-shadow:0 8px 24px rgba(242,239,232,0.12); }
+  button.ghost{ background:transparent; border:1px solid var(--card-border); color:var(--text); font-family:'Sora',sans-serif; font-weight:600;
+    font-size:13.5px; padding:13px 22px; border-radius:100px; cursor:pointer; transition:border-color .15s ease; }
+  button.ghost:hover{ border-color:var(--accent); }
+  button.ghost.active-toggle{ border-color:var(--accent); color:var(--accent); }
+
+  .settings-card{ background:var(--card); border:1px solid var(--card-border); border-radius:16px; padding:18px 20px; text-align:left; margin-top:10px; }
+  .settings-row{ margin-bottom:14px; }
+  .settings-row:last-child{ margin-bottom:0; }
+  .settings-label{ font-size:12px; color:var(--text-dim); font-weight:700; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:8px; display:block; }
+  select.settings-select{ width:100%; background:var(--bg-soft); border:1px solid var(--card-border); border-radius:10px; padding:11px 12px;
+    color:var(--text); font-family:'Sora',sans-serif; font-size:13.5px; }
+  input.settings-slider{ width:100%; }
+
+  @media (prefers-reduced-motion: reduce){ *{ animation-duration:0.01ms !important; transition-duration:0.01ms !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HOME: LISTA DE PRÁTICAS -->
+  <section class="screen active" id="screen-home">
+    <div class="hero">
+      <div class="eyebrow">A Arte de Respirar</div>
+      <h1>Seu freio de emergência diário.</h1>
+      <p>Escolha uma prática. Uma voz guia o ritmo, uma música suave fica de fundo — você só precisa respirar.</p>
+    </div>
+    <div class="practice-list" id="practice-list"></div>
+  </section>
+
+  <!-- PAYWALL / ASSINATURA -->
+  <section class="screen" id="screen-paywall">
+    <div class="hero">
+      <div class="eyebrow">Assinatura</div>
+      <h1>Desbloqueie todas as práticas.</h1>
+      <p>Para Ansiedade, Energizante, Diafragmática e as próximas que vierem — tudo incluso, com voz guiada e música ambiente.</p>
+    </div>
+    <div class="settings-card" style="text-align:center;">
+      <div style="font-family:'Fraunces',serif; font-size:38px; font-weight:600; margin-bottom:4px;">R$ 14,90<span style="font-size:14px; color:var(--text-dim); font-weight:400;">/mês</span></div>
+      <div style="font-size:12px; color:var(--text-dim); margin-bottom:20px;">Cancele quando quiser, sem multa</div>
+      <button class="primary" id="subscribe-btn" onclick="subscribe()" style="width:100%;">Assinar agora</button>
+    </div>
+    <button class="back-link" onclick="goTo('screen-home')">← Voltar</button>
+  </section>
+
+  <!-- CONFIGURAÇÕES DE VOZ E MÚSICA -->
+  <section class="screen" id="screen-settings-intro">
+    <div class="hero">
+      <div class="eyebrow" id="settings-practice-name">Prática</div>
+      <h1>Antes de começar</h1>
+      <p id="settings-practice-desc"></p>
+    </div>
+    <div class="settings-card">
+      <div class="settings-row">
+        <span class="settings-label">Voz do guia</span>
+        <select class="settings-select" id="voice-select"></select>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">Volume da voz</span>
+        <input type="range" class="settings-slider" id="voice-volume" min="0" max="1" step="0.05" value="0.9">
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">Música ambiente</span>
+        <input type="range" class="settings-slider" id="music-volume" min="0" max="1" step="0.05" value="0.4">
+      </div>
+    </div>
+    <div class="session-controls" style="margin-top:24px;">
+      <button class="primary" onclick="startSession()">Começar a respirar</button>
+    </div>
+    <button class="back-link" onclick="goTo('screen-home')">← Escolher outra prática</button>
+  </section>
+
+  <!-- SESSÃO DE RESPIRAÇÃO -->
+  <section class="screen" id="screen-session">
+    <div class="session-wrap">
+      <div class="session-title" id="session-practice-name"></div>
+      <div class="session-cycles" id="session-cycle-count"></div>
+
+      <div class="breath-orb-wrap">
+        <div class="breath-ring"></div>
+        <div class="breath-orb" id="breath-orb"></div>
+      </div>
+
+      <div class="breath-phase-label" id="breath-phase-label">Preparando...</div>
+      <div class="breath-timer" id="breath-timer"></div>
+
+      <div class="session-controls">
+        <button class="ghost" id="pause-btn" onclick="togglePause()">Pausar</button>
+        <button class="ghost" id="voice-toggle-btn" onclick="toggleVoice()">🔊 Voz</button>
+        <button class="ghost" id="music-toggle-btn" onclick="toggleMusic()">🎵 Música</button>
+      </div>
+      <button class="back-link" onclick="endSession()">Encerrar sessão</button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+/* ================= PRÁTICAS ================= */
+const PRACTICES = [
+  { id:'478', emoji:'🌙', name:'4-7-8 para Dormir', desc:'Inspire 4s, segure 7s, expire 8s. Acalma o sistema nervoso e prepara pro sono.',
+    meta:'6 ciclos', cycles:6, premium:false, pattern:[{phase:'inspire',s:4},{phase:'segure',s:7},{phase:'expire',s:8}] },
+  { id:'box', emoji:'🟦', name:'Respiração Box', desc:'4 tempos iguais: inspira, segura, expira, segura. Usada por forças especiais pra manter o foco sob pressão.',
+    meta:'8 ciclos', cycles:8, premium:false, pattern:[{phase:'inspire',s:4},{phase:'segure',s:4},{phase:'expire',s:4},{phase:'segure',s:4}] },
+  { id:'coerente', emoji:'🌊', name:'Respiração Coerente', desc:'5 segundos pra dentro, 5 pra fora. Equilibra o ritmo cardíaco e reduz o estresse geral.',
+    meta:'10 ciclos', cycles:10, premium:false, pattern:[{phase:'inspire',s:5},{phase:'expire',s:5}] },
+  { id:'ansiedade', emoji:'🕊️', name:'Para Ansiedade', desc:'Expiração mais longa que a inspiração, ativando o sistema que te acalma na hora.',
+    meta:'8 ciclos', cycles:8, premium:true, pattern:[{phase:'inspire',s:4},{phase:'expire',s:8}] },
+  { id:'energizante', emoji:'⚡', name:'Energizante', desc:'Ritmo rápido e curto pra acordar o corpo e ganhar disposição.',
+    meta:'15 ciclos', cycles:15, premium:true, pattern:[{phase:'inspire',s:2},{phase:'expire',s:2}] },
+  { id:'diafragmatica', emoji:'🌿', name:'Diafragmática', desc:'Respiração profunda pelo abdômen, a base de qualquer prática de calma.',
+    meta:'8 ciclos', cycles:8, premium:true, pattern:[{phase:'inspire',s:5},{phase:'segure',s:2},{phase:'expire',s:6}] }
+];
+
+const PHASE_LABEL = { inspire:'Inspire', segure:'Segure', expire:'Expire' };
+const PHASE_SPEECH = { inspire:'Inspire', segure:'Segure', expire:'Expire' };
+
+/* ================= ASSINATURA ================= */
+let isSubscribed = false;
+
+async function subscribe(){
+  const btn = document.getElementById('subscribe-btn');
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Abrindo pagamento...';
+  try{
+    const res = await fetch('/api/create-checkout-session', { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
+    const data = await res.json();
+    if(data.url){ window.location.href = data.url; }
+    else{ throw new Error(data.error || 'Erro ao iniciar pagamento'); }
+  }catch(err){
+    alert('Não foi possível iniciar o pagamento agora. Tenta de novo em instantes.');
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+}
+
+async function checkExistingSubscription(){
+  const subId = localStorage.getItem('arterespirar_subscription_id');
+  if(!subId){ isSubscribed = false; return; }
+  try{
+    const res = await fetch(`/api/check-subscription?subscription_id=${encodeURIComponent(subId)}`);
+    const data = await res.json();
+    isSubscribed = !!data.active;
+    if(!isSubscribed){ localStorage.removeItem('arterespirar_subscription_id'); }
+  }catch(e){
+    isSubscribed = false;
+  }
+}
+
+async function handlePaymentReturn(){
+  const params = new URLSearchParams(window.location.search);
+  if(params.get('paid') === '1' && params.get('session_id')){
+    try{
+      const res = await fetch(`/api/verify-session?session_id=${encodeURIComponent(params.get('session_id'))}`);
+      const data = await res.json();
+      window.history.replaceState({}, '', window.location.pathname);
+      if(data.active && data.subscriptionId){
+        localStorage.setItem('arterespirar_subscription_id', data.subscriptionId);
+        isSubscribed = true;
+      }
+    }catch(e){}
+  }
+}
+
+function goTo(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function renderPracticeList(){
+  const el = document.getElementById('practice-list');
+  el.innerHTML = '';
+  PRACTICES.forEach(p=>{
+    const locked = p.premium && !isSubscribed;
+    const card = document.createElement('div');
+    card.className = 'practice-card' + (locked ? ' locked' : '');
+    card.onclick = ()=> locked ? goTo('screen-paywall') : openSettingsFor(p.id);
+    card.innerHTML = `
+      <div class="practice-emoji">${p.emoji}</div>
+      <div class="practice-info">
+        <div class="practice-name">${p.name} ${locked ? '🔒' : ''}</div>
+        <div class="practice-desc">${p.desc}</div>
+      </div>
+      <div class="practice-meta">${locked ? 'Assinatura' : p.meta}</div>
+    `;
+    el.appendChild(card);
+  });
+}
+
+/* ================= VOZ (Web Speech API) ================= */
+let availableVoices = [];
+let selectedVoice = null;
+let voiceEnabled = true;
+
+function loadVoices(){
+  availableVoices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+  const select = document.getElementById('voice-select');
+  if(!availableVoices.length){
+    select.innerHTML = '<option value="">Voz padrão do navegador</option>';
+    return;
+  }
+  const ptVoices = availableVoices.filter(v=> v.lang && v.lang.toLowerCase().startsWith('pt'));
+  const otherVoices = availableVoices.filter(v=> !(v.lang && v.lang.toLowerCase().startsWith('pt')));
+  const ordered = ptVoices.concat(otherVoices);
+  select.innerHTML = ordered.map((v,i)=> `<option value="${v.name}">${v.name} (${v.lang})</option>`).join('');
+  const savedName = localStorage.getItem('arterespirar_voice');
+  const savedVoice = ordered.find(v=>v.name===savedName);
+  selectedVoice = savedVoice || ptVoices[0] || ordered[0] || null;
+  if(selectedVoice) select.value = selectedVoice.name;
+}
+if(window.speechSynthesis){
+  window.speechSynthesis.onvoiceschanged = loadVoices;
+}
+
+function speakPhase(phaseWord){
+  if(!voiceEnabled || !window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(phaseWord);
+  if(selectedVoice) utter.voice = selectedVoice;
+  utter.rate = 0.82;
+  utter.pitch = 0.95;
+  utter.volume = parseFloat(document.getElementById('voice-volume').value || 0.9);
+  window.speechSynthesis.speak(utter);
+}
+
+function toggleVoice(){
+  voiceEnabled = !voiceEnabled;
+  document.getElementById('voice-toggle-btn').classList.toggle('active-toggle', voiceEnabled);
+  document.getElementById('voice-toggle-btn').textContent = voiceEnabled ? '🔊 Voz' : '🔇 Voz';
+  if(!voiceEnabled && window.speechSynthesis) window.speechSynthesis.cancel();
+}
+
+/* ================= MÚSICA AMBIENTE (Web Audio API, gerada por código) ================= */
+let audioCtx = null;
+let musicNodes = null;
+let musicEnabled = true;
+let musicTimer = null;
+
+function ensureAudioCtx(){
+  if(!audioCtx){ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+  if(audioCtx.state === 'suspended'){ audioCtx.resume(); }
+}
+
+function playChord(freqs, duration, startTime, masterGain){
+  freqs.forEach(freq=>{
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 800;
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0, startTime);
+    gain.gain.linearRampToValueAtTime(0.16, startTime + 3);
+    gain.gain.linearRampToValueAtTime(0.16, startTime + duration - 3);
+    gain.gain.linearRampToValueAtTime(0, startTime + duration);
+    osc.connect(filter); filter.connect(gain); gain.connect(masterGain);
+    osc.start(startTime);
+    osc.stop(startTime + duration + 0.5);
+  });
+}
+
+function startMusic(){
+  if(!musicEnabled) return;
+  ensureAudioCtx();
+  const masterGain = audioCtx.createGain();
+  masterGain.gain.value = parseFloat(document.getElementById('music-volume').value || 0.4);
+  masterGain.connect(audioCtx.destination);
+  musicNodes = { masterGain };
+
+  // Progressão suave: Ré menor -> Fá maior, alternando devagar, registro grave/médio.
+  const chords = [
+    [146.83, 174.61, 220.00], // Ré menor (D3, F3, A3)
+    [174.61, 220.00, 261.63]  // Fá maior (F3, A3, C4)
+  ];
+  const chordDuration = 9;
+  let chordIndex = 0;
+
+  function scheduleNext(){
+    if(!musicEnabled || !audioCtx) return;
+    const now = audioCtx.currentTime;
+    playChord(chords[chordIndex % chords.length], chordDuration, now, masterGain);
+    chordIndex++;
+    musicTimer = setTimeout(scheduleNext, (chordDuration - 1) * 1000);
+  }
+  scheduleNext();
+}
+
+function stopMusic(){
+  if(musicTimer){ clearTimeout(musicTimer); musicTimer = null; }
+  if(musicNodes && musicNodes.masterGain){
+    musicNodes.masterGain.gain.setTargetAtTime(0, audioCtx ? audioCtx.currentTime : 0, 0.5);
+  }
+  musicNodes = null;
+}
+
+function toggleMusic(){
+  musicEnabled = !musicEnabled;
+  document.getElementById('music-toggle-btn').classList.toggle('active-toggle', musicEnabled);
+  document.getElementById('music-toggle-btn').textContent = musicEnabled ? '🎵 Música' : '🔈 Música';
+  if(musicEnabled){ startMusic(); } else { stopMusic(); }
+}
+
+/* ================= SESSÃO ================= */
+let currentPractice = null;
+let sessionRunning = false;
+let sessionPaused = false;
+let cycleCount = 0;
+let phaseIndex = 0;
+let phaseTimeLeft = 0;
+let sessionTickInterval = null;
+
+function openSettingsFor(practiceId){
+  currentPractice = PRACTICES.find(p=>p.id===practiceId);
+  document.getElementById('settings-practice-name').textContent = currentPractice.name;
+  document.getElementById('settings-practice-desc').textContent = currentPractice.desc;
+  loadVoices();
+  goTo('screen-settings-intro');
+}
+
+function startSession(){
+  const voiceSelect = document.getElementById('voice-select');
+  selectedVoice = availableVoices.find(v=>v.name===voiceSelect.value) || selectedVoice;
+  if(selectedVoice) localStorage.setItem('arterespirar_voice', selectedVoice.name);
+
+  voiceEnabled = true;
+  musicEnabled = true;
+  document.getElementById('voice-toggle-btn').textContent = '🔊 Voz';
+  document.getElementById('music-toggle-btn').textContent = '🎵 Música';
+  document.getElementById('voice-toggle-btn').classList.add('active-toggle');
+  document.getElementById('music-toggle-btn').classList.add('active-toggle');
+
+  document.getElementById('session-practice-name').textContent = currentPractice.name;
+  cycleCount = 0;
+  phaseIndex = 0;
+  sessionPaused = false;
+  sessionRunning = true;
+  document.getElementById('pause-btn').textContent = 'Pausar';
+
+  goTo('screen-session');
+  startMusic();
+  runPhase();
+}
+
+function updateCycleLabel(){
+  document.getElementById('session-cycle-count').textContent = `Ciclo ${Math.min(cycleCount+1, currentPractice.cycles)} de ${currentPractice.cycles}`;
+}
+
+function runPhase(){
+  if(!sessionRunning) return;
+  if(cycleCount >= currentPractice.cycles){
+    finishSession();
+    return;
+  }
+  const phase = currentPractice.pattern[phaseIndex];
+  phaseTimeLeft = phase.s;
+  updateCycleLabel();
+
+  document.getElementById('breath-phase-label').textContent = PHASE_LABEL[phase.phase];
+  document.getElementById('breath-timer').textContent = phaseTimeLeft + 's';
+
+  const orb = document.getElementById('breath-orb');
+  if(phase.phase === 'inspire'){ orb.style.transform = 'scale(1.7)'; orb.style.transitionDuration = phase.s + 's'; }
+  else if(phase.phase === 'expire'){ orb.style.transform = 'scale(1)'; orb.style.transitionDuration = phase.s + 's'; }
+  // "segure" mantém o tamanho atual, sem transição nova
+
+  speakPhase(PHASE_SPEECH[phase.phase]);
+
+  clearInterval(sessionTickInterval);
+  sessionTickInterval = setInterval(()=>{
+    if(sessionPaused) return;
+    phaseTimeLeft--;
+    document.getElementById('breath-timer').textContent = Math.max(phaseTimeLeft,0) + 's';
+    if(phaseTimeLeft <= 0){
+      clearInterval(sessionTickInterval);
+      phaseIndex++;
+      if(phaseIndex >= currentPractice.pattern.length){
+        phaseIndex = 0;
+        cycleCount++;
+      }
+      runPhase();
+    }
+  }, 1000);
+}
+
+function togglePause(){
+  sessionPaused = !sessionPaused;
+  document.getElementById('pause-btn').textContent = sessionPaused ? 'Continuar' : 'Pausar';
+  if(sessionPaused && window.speechSynthesis){ window.speechSynthesis.cancel(); }
+}
+
+function finishSession(){
+  sessionRunning = false;
+  clearInterval(sessionTickInterval);
+  document.getElementById('breath-phase-label').textContent = 'Sessão concluída 🌿';
+  document.getElementById('breath-timer').textContent = '';
+  stopMusic();
+}
+
+function endSession(){
+  sessionRunning = false;
+  clearInterval(sessionTickInterval);
+  if(window.speechSynthesis) window.speechSynthesis.cancel();
+  stopMusic();
+  goTo('screen-home');
+}
+
+window.addEventListener('DOMContentLoaded', async ()=>{
+  await handlePaymentReturn();
+  await checkExistingSubscription();
+  renderPracticeList();
+  loadVoices();
+});
+</script>
+</body>
+</html>
